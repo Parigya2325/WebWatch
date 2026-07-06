@@ -26,9 +26,9 @@ The project is built using:
 
 ## Team Members
 
-- Parigya (Project Leader)
-- Member 2
-- Member 3
+- Parigya 
+- Shreya
+- Prakriti
 
 ---
 
