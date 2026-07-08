@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request, redirect, flash
-from werkzeug.security import generate_password_hash
+from flask import Flask, render_template, request, redirect, flash, session
+from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 from database.models import db, User
 
@@ -14,9 +14,49 @@ def home():
     return render_template("index.html")
 
 
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login():
+
+    if request.method == "POST":
+
+        email = request.form["email"]
+        password = request.form["password"]
+
+        user = User.query.filter_by(email=email).first()
+
+        if user and check_password_hash(user.password, password):
+
+            session["user_id"] = user.id
+            session["username"] = user.username
+
+            flash("Login Successful!")
+            return redirect("/dashboard")
+
+        flash("Invalid Email or Password")
+        return redirect("/login")
+
     return render_template("login.html")
+
+@app.route("/dashboard")
+def dashboard():
+
+    if "user_id" not in session:
+        flash("Please login first.")
+        return redirect("/login")
+
+    return render_template(
+        "dashboard.html",
+        username=session["username"]
+    )
+
+@app.route("/logout")
+def logout():
+
+    session.clear()
+
+    flash("Logged out successfully.")
+
+    return redirect("/")
 
 
 @app.route("/register", methods=["GET", "POST"])
