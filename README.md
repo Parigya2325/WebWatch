@@ -12,13 +12,14 @@ WebWatch is a real-time website monitoring system that checks:
 - Security Headers
 - Uptime Statistics
 
-Technology Stack
-Backend: Python, Flask
-Database: SQL
-Frontend: HTML, CSS, Bootstrap
-Scheduler: APScheduler
-HTTP Requests: Requests Library
-Data Visualization: Plotly
+### Technology Stack
+
+- Backend: Python, Flask
+- Database: SQL
+- Frontend: HTML, CSS, Bootstrap
+- Scheduler: APScheduler
+- HTTP Requests: Requests Library
+- Data Visualization: Plotly
 
 ---
 
