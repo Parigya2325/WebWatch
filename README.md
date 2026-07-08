@@ -16,7 +16,7 @@ The project is built using:
 
 - Python
 - Flask
-- SQLite
+- SQL
 - Bootstrap
 - APScheduler
 - Requests
