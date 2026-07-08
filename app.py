@@ -1,3 +1,4 @@
+from monitoring.http_monitor import check_website
 from flask import Flask, render_template, request, redirect, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
@@ -204,6 +205,40 @@ def delete_website(id):
 
     return redirect("/websites")
 
+@app.route("/monitor/<int:id>")
+def monitor(id):
+
+    if "user_id" not in session:
+        flash("Please login first.")
+        return redirect("/login")
+
+    website = Website.query.get_or_404(id)
+
+    result = check_website(website.url)
+
+    # Save monitoring log
+    log = MonitoringLog(
+
+        website_id=website.id,
+
+        status_code=result["status_code"],
+
+        response_time=result["response_time"],
+
+        is_online=result["is_online"]
+
+    )
+
+    db.session.add(log)
+
+    # Update current website status
+    website.status = result["is_online"]
+
+    db.session.commit()
+
+    flash("Website monitored successfully!")
+
+    return redirect("/websites")
 
 if __name__ == "__main__":
     with app.app_context():
