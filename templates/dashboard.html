@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Welcome, {{ username }} 👋</h2>
+
+<hr>
+
+<div class="row">
+
+    <div class="col-md-3">
+        <div class="card p-3">
+            <h4>Total Websites</h4>
+            <h2>{{ total_websites }}</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card p-3">
+            <h4>Online</h4>
+            <h2>{{ online }}</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card p-3">
+            <h4>Offline</h4>
+            <h2>{{ offline }}</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card p-3">
+            <h4>SSL Alerts</h4>
+            <h2>{{ ssl_alerts }}</h2>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
