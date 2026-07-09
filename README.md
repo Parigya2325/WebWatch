@@ -21,7 +21,7 @@ WebWatch is a web-based application developed to help users monitor and manage w
 
 ---
 
-## Team Members
+## 👥Team Members
 
 - Parigya 
 - Shreya
