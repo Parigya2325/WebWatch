@@ -29,7 +29,7 @@ WebWatch is a web-based application developed to help users monitor and manage w
 
 ---
 
-🚀 Features
+## 🚀 Features
 - 🌐 Website Availability Monitoring – Detects whether a website is online or offline in real time.
 - ⚡ Response Time Tracking – Measures website loading and server response time.
 - 🔒 SSL Certificate Monitoring – Alerts users before SSL certificates expire.
