@@ -13,14 +13,16 @@ WebWatch is a real-time website monitoring and security analysis tool designed t
 - 🛡️ Security Headers Analysis – Verifies important HTTP security headers to identify potential vulnerabilities.
 - 📊 Uptime Statistics – Displays website uptime percentage and historical monitoring data.
 
-### 🛠️ Technology Stack
+## 🛠️ Technology Stack
 
-- Backend: Python, Flask
-- Database: SQL
-- Frontend: HTML, CSS, Bootstrap
-- Scheduler: APScheduler
-- HTTP Requests: Requests Library
-- Data Visualization: Plotly
+| Category | Technology |
+|----------|------------|
+| **Backend** | Python, Flask |
+| **Frontend** | HTML5, CSS3, Bootstrap |
+| **Database** | SQL (SQLite/MySQL) |
+| **Task Scheduler** | APScheduler |
+| **HTTP Client** | Requests Library |
+| **Data Visualization** | Plotly |
 
 ---
 
