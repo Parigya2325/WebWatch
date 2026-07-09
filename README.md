@@ -4,14 +4,9 @@
 
 ### 📌 Project Description
 
-WebWatch is a real-time website monitoring and security analysis tool designed to continuously track the health, performance, and security of websites. It helps users detect downtime, monitor response speed, check SSL certificate validity, analyze essential security headers, and view uptime statistics through an easy-to-use dashboard.
+WebWatch is a web-based application developed to help users monitor and manage websites efficiently through a centralized platform. It provides an intuitive interface for tracking website health and analyzing performance, making it easier to identify issues and maintain reliable web services. The project focuses on delivering a simple, scalable, and user-friendly solution for website monitoring and security management.
 
-🚀 Features
-- 🌐 Website Availability Monitoring – Detects whether a website is online or offline in real time.
-- ⚡ Response Time Tracking – Measures website loading and server response time.
-- 🔒 SSL Certificate Monitoring – Alerts users before SSL certificates expire.
-- 🛡️ Security Headers Analysis – Verifies important HTTP security headers to identify potential vulnerabilities.
-- 📊 Uptime Statistics – Displays website uptime percentage and historical monitoring data.
+
 
 ## 🛠️ Technology Stack
 
@@ -34,15 +29,12 @@ WebWatch is a real-time website monitoring and security analysis tool designed t
 
 ---
 
-## Features
-
-- User Login
-- Website Monitoring
-- SSL Monitoring
-- Security Header Analysis
-- Dashboard
-- Charts
-- Reports
+🚀 Features
+- 🌐 Website Availability Monitoring – Detects whether a website is online or offline in real time.
+- ⚡ Response Time Tracking – Measures website loading and server response time.
+- 🔒 SSL Certificate Monitoring – Alerts users before SSL certificates expire.
+- 🛡️ Security Headers Analysis – Verifies important HTTP security headers to identify potential vulnerabilities.
+- 📊 Uptime Statistics – Displays website uptime percentage and historical monitoring data.
 
 ---
 
