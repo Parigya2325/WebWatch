@@ -59,7 +59,30 @@ def dashboard():
 
     offline = total_websites - online
 
-    ssl_alerts = 0
+    ssl_alerts = Website.query.filter_by(
+        user_id=session["user_id"],
+        ssl_warning=True
+    ).count()
+
+    recent_logs = (
+        MonitoringLog.query
+        .join(Website)
+        .filter(Website.user_id == session["user_id"])
+        .order_by(MonitoringLog.checked_at.desc())
+        .limit(5)
+        .all()
+    )
+
+    print("Session User ID:", session["user_id"])
+    print("Total recent logs:", len(recent_logs))
+
+    for log in recent_logs:
+        print(
+            log.id,
+            log.website.website_name,
+            log.website.user_id,
+            log.checked_at
+        )
 
     return render_template(
         "dashboard.html",
@@ -67,7 +90,8 @@ def dashboard():
         total_websites=total_websites,
         online=online,
         offline=offline,
-        ssl_alerts=ssl_alerts
+        ssl_alerts=ssl_alerts,
+        recent_logs=recent_logs
     )
 
 @app.route("/add-website", methods=["GET", "POST"])
@@ -209,6 +233,7 @@ def delete_website(id):
 
     return redirect("/websites")
 
+
 @app.route("/monitor/<int:id>")
 def monitor(id):
 
@@ -218,36 +243,31 @@ def monitor(id):
 
     website = Website.query.get_or_404(id)
 
+    # HTTP Monitoring
     result = check_website(website.url)
 
-    hostname = website.url.replace("https://", "").replace("http://", "").split("/")[0]
+    website.status = result["is_online"]
 
-    ssl_expiry = get_ssl_expiry(hostname)
+    # SSL Monitoring
+    ssl_expiry = get_ssl_expiry(website.url)
 
     website.ssl_expiry = ssl_expiry
 
-    days_left = (ssl_expiry - datetime.now()).days
+    if ssl_expiry:
+        days_left = (ssl_expiry - datetime.utcnow()).days
+        website.ssl_warning = days_left <= 30
+    else:
+        website.ssl_warning = False
 
-    website.ssl_warning = days_left <= 30
-
-    # Save monitoring log
+    # Save Monitoring Log
     log = MonitoringLog(
-
         website_id=website.id,
-
         status_code=result["status_code"],
-
         response_time=result["response_time"],
-
         is_online=result["is_online"]
-
     )
 
     db.session.add(log)
-
-    # Update current website status
-    website.status = result["is_online"]
-
     db.session.commit()
 
     flash("Website monitored successfully!")

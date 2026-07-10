@@ -1,21 +1,30 @@
 import socket
 import ssl
+from urllib.parse import urlparse
 from datetime import datetime
 
 
-def get_ssl_expiry(hostname):
+def get_ssl_expiry(url):
 
-    context = ssl.create_default_context()
+    try:
+        # Extract hostname from URL
+        hostname = urlparse(url).hostname
 
-    with socket.create_connection((hostname, 443)) as sock:
+        context = ssl.create_default_context()
 
-        with context.wrap_socket(sock, server_hostname=hostname) as ssock:
+        with socket.create_connection((hostname, 443), timeout=10) as sock:
 
-            certificate = ssock.getpeercert()
+            with context.wrap_socket(sock, server_hostname=hostname) as ssock:
 
-            expiry_date = certificate["notAfter"]
+                certificate = ssock.getpeercert()
 
-            return datetime.strptime(
-                expiry_date,
-                "%b %d %H:%M:%S %Y %Z"
-            )
+                expiry_date = certificate["notAfter"]
+
+                return datetime.strptime(
+                    expiry_date,
+                    "%b %d %H:%M:%S %Y %Z"
+                )
+
+    except Exception as e:
+        print("SSL Error:", e)
+        return None
