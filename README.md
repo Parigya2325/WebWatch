@@ -14,7 +14,7 @@ WebWatch is a web-based application developed to help users monitor and manage w
 |----------|------------|
 | **Backend** | Python, Flask |
 | **Frontend** | HTML5, CSS3, Bootstrap |
-| **Database** | SQL (SQLite/MySQL) |
+| **Database** | MySQL |
 | **Task Scheduler** | APScheduler |
 | **HTTP Client** | Requests Library |
 | **Data Visualization** | Plotly |
