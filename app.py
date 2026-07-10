@@ -73,6 +73,46 @@ def dashboard():
         .all()
     )
 
+    website_names = []
+    avg_response_times = []
+    uptime_data = []
+
+    for website in websites:
+
+        total_logs = MonitoringLog.query.filter_by(
+            website_id=website.id
+        ).count()
+
+        online_logs = MonitoringLog.query.filter_by(
+            website_id=website.id,
+            is_online=True
+        ).count()
+
+        if total_logs == 0:
+            uptime = 0
+        else:
+            uptime = round((online_logs / total_logs) * 100, 2)
+        
+        uptime_data.append({
+            "name": website.website_name,
+            "uptime": uptime
+        })
+
+    for website in websites:
+
+        logs = (
+            MonitoringLog.query
+            .filter_by(website_id=website.id)
+            .order_by(MonitoringLog.checked_at.desc())
+            .limit(10)
+            .all()
+        )
+
+        if logs:
+            avg = sum(log.response_time for log in logs) / len(logs)
+            website_names.append(website.website_name)
+            avg_response_times.append(round(avg, 2))
+
     print("Session User ID:", session["user_id"])
     print("Total recent logs:", len(recent_logs))
 
@@ -84,6 +124,19 @@ def dashboard():
             log.checked_at
         )
 
+    ssl_info = []
+
+    for website in websites:
+        if website.ssl_expiry:
+            days_left = (website.ssl_expiry - datetime.utcnow()).days
+        else:
+            days_left = None
+        ssl_info.append({
+            "name": website.website_name,
+            "expiry": website.ssl_expiry,
+            "days_left": days_left
+        })
+
     return render_template(
         "dashboard.html",
         username=session["username"],
@@ -91,7 +144,11 @@ def dashboard():
         online=online,
         offline=offline,
         ssl_alerts=ssl_alerts,
-        recent_logs=recent_logs
+        recent_logs=recent_logs,
+        website_names=website_names,
+        avg_response_times=avg_response_times,
+        uptime_data=uptime_data,
+        ssl_info=ssl_info
     )
 
 @app.route("/add-website", methods=["GET", "POST"])
