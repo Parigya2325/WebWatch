@@ -50,4 +50,133 @@
 
 </div>
 
+<hr class="my-4">
+
+<h3>Recent Monitoring Activity</h3>
+
+<table class="table table-striped">
+
+    <thead>
+        <tr>
+            <th>Website</th>
+            <th>Status</th>
+            <th>Response Time</th>
+            <th>Checked At</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+    {% for log in recent_logs %}
+
+    <tr>
+
+        <td>{{ log.website.website_name }}</td>
+
+        <td>
+
+            {% if log.is_online %}
+                <span class="badge bg-success">Online</span>
+            {% else %}
+                <span class="badge bg-danger">Offline</span>
+            {% endif %}
+
+        </td>
+
+        <td>{{ "%.2f"|format(log.response_time) }} ms</td>
+
+        <td>{{ log.checked_at }}</td>
+
+    </tr>
+
+    {% endfor %}
+
+    </tbody>
+
+</table>
+
+<hr class="my-5">
+
+<h3>Website Statistics</h3>
+
+<div class="row">
+
+    <div class="col-md-6">
+        <canvas id="statusChart"></canvas>
+    </div>
+
+    <div class="col-md-6">
+        <canvas id="websiteChart"></canvas>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const statusChart = new Chart(
+    document.getElementById("statusChart"),
+    {
+        type: "doughnut",
+
+        data: {
+            labels: ["Online", "Offline"],
+
+            datasets: [{
+                data: [{{ online }}, {{ offline }}],
+
+                backgroundColor: [
+                    "#28a745",
+                    "#dc3545"
+                ],
+
+                borderWidth: 2
+            }]
+        },
+
+        options: {
+            responsive: true,
+
+            plugins: {
+                legend: {
+                    position: "top"
+                }
+            }
+        }
+    }
+);
+
+const websiteChart = new Chart(
+    document.getElementById("websiteChart"),
+    {
+        type: "bar",
+
+        data: {
+            labels: ["Websites"],
+
+            datasets: [{
+                label: "Total",
+
+                data: [{{ total_websites }}],
+
+                backgroundColor: "#0d6efd"
+            }]
+        },
+
+        options: {
+            responsive: true,
+
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    }
+);
+</script>
 {% endblock %}

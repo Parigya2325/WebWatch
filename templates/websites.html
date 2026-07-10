@@ -16,6 +16,8 @@
             <th>URL</th>
             <th>Interval</th>
             <th>Status</th>
+            <th>SSL Expiry</th>
+            <th>SSL Status</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -41,14 +43,32 @@
         </td>
 
         <td>
+            {% if website.ssl_expiry %}
+                {{ website.ssl_expiry.strftime("%d-%m-%Y") }}
+            {% else %}
+                Not Checked
+            {% endif %}
+        </td>
 
-            <a href="/monitor/{{ website.id }}"
-               class="btn btn-primary btn-sm">
+        <td>
+            {% if website.ssl_warning %}
+                <span class="badge bg-danger">
+                    Expiring Soon
+                </span>
+            {% else %}
+                <span class="badge bg-success">
+                    Valid
+                </span>
+            {% endif %}
+        </td>
+
+        <td>
+
+            <a href="/monitor/{{ website.id }}" class="btn btn-primary btn-sm">
                 Monitor
             </a>
 
-            <a href="/edit-website/{{ website.id }}"
-               class="btn btn-warning btn-sm">
+            <a href="/edit-website/{{ website.id }}" class="btn btn-warning btn-sm">
                 Edit
             </a>
 
