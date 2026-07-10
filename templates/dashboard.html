@@ -111,6 +111,152 @@
 
 </div>
 
+<hr class="my-5">
+
+<h3>Website Uptime</h3>
+
+<table class="table table-bordered">
+
+    <thead class="table-dark">
+        <tr>
+            <th>Website</th>
+            <th>Uptime</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+    {% for item in uptime_data %}
+
+    <tr>
+
+        <td>{{ item.name }}</td>
+
+        <td>{{ item.uptime }}%</td>
+
+        <td>
+
+            {% if item.uptime >= 99 %}
+
+                <span class="badge bg-success">
+                    Excellent
+                </span>
+
+            {% elif item.uptime >= 95 %}
+
+                <span class="badge bg-warning text-dark">
+                    Good
+                </span>
+
+            {% else %}
+
+                <span class="badge bg-danger">
+                    Poor
+                </span>
+
+            {% endif %}
+
+        </td>
+
+    </tr>
+
+    {% endfor %}
+
+    </tbody>
+
+</table>
+
+<hr class="my-5">
+
+<h3>SSL Certificate Status</h3>
+
+<table class="table table-hover table-bordered">
+
+    <thead class="table-dark">
+
+        <tr>
+            <th>Website</th>
+            <th>Expiry Date</th>
+            <th>Days Left</th>
+            <th>Status</th>
+        </tr>
+
+    </thead>
+
+    <tbody>
+
+    {% for ssl in ssl_info %}
+
+    <tr>
+
+        <td>{{ ssl.name }}</td>
+
+        <td>
+
+            {% if ssl.expiry %}
+                {{ ssl.expiry.strftime("%d-%m-%Y") }}
+            {% else %}
+                Not Checked
+            {% endif %}
+
+        </td>
+
+        <td>
+
+            {% if ssl.days_left is not none %}
+                {{ ssl.days_left }}
+            {% else %}
+                --
+            {% endif %}
+
+        </td>
+
+        <td>
+
+            {% if ssl.days_left is none %}
+
+                <span class="badge bg-secondary">
+                    Not Checked
+                </span>
+
+            {% elif ssl.days_left <= 15 %}
+
+                <span class="badge bg-danger">
+                    Critical
+                </span>
+
+            {% elif ssl.days_left <= 30 %}
+
+                <span class="badge bg-warning text-dark">
+                    Expiring Soon
+
+                </span>
+
+            {% elif ssl.days_left <= 90 %}
+
+                <span class="badge bg-info">
+                    Renew Soon
+                </span>
+
+            {% else %}
+
+                <span class="badge bg-success">
+                    Secure
+                </span>
+
+            {% endif %}
+
+        </td>
+
+    </tr>
+
+    {% endfor %}
+
+    </tbody>
+
+</table>
+
 {% endblock %}
 
 {% block scripts %}
@@ -147,36 +293,47 @@ const statusChart = new Chart(
     }
 );
 
-const websiteChart = new Chart(
+const responseChart = new Chart(
+
     document.getElementById("websiteChart"),
+
     {
+
         type: "bar",
 
         data: {
-            labels: ["Websites"],
+
+            labels: {{ website_names|tojson }},
 
             datasets: [{
-                label: "Total",
 
-                data: [{{ total_websites }}],
+                label: "Average Response Time (ms)",
+
+                data: {{ avg_response_times|tojson }},
 
                 backgroundColor: "#0d6efd"
+
             }]
         },
 
         options: {
+
             responsive: true,
 
             scales: {
+
                 y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
+
+                    beginAtZero: true
+
                 }
+
             }
+
         }
+
     }
+
 );
 </script>
 {% endblock %}
