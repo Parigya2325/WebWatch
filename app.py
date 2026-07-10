@@ -240,6 +240,26 @@ def monitor(id):
 
     return redirect("/websites")
 
+@app.route("/monitoring-history")
+def monitoring_history():
+
+    if "user_id" not in session:
+        flash("Please login first.")
+        return redirect("/login")
+
+    logs = (
+        MonitoringLog.query
+        .join(Website)
+        .filter(Website.user_id == session["user_id"])
+        .order_by(MonitoringLog.checked_at.desc())
+        .all()
+    )
+
+    return render_template(
+        "monitoring_logs.html",
+        logs=logs
+    )
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
