@@ -36,6 +36,10 @@ class Website(db.Model):
 
     status = db.Column(db.Boolean, default=True)
 
+    ssl_expiry = db.Column(db.DateTime)
+
+    ssl_warning = db.Column(db.Boolean, default=False)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     user_id = db.Column(
