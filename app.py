@@ -1,4 +1,8 @@
+from monitoring.scheduler import scheduler
+from monitoring.auto_monitor import monitor_all_websites
 from monitoring.http_monitor import check_website
+from monitoring.ssl_monitor import get_ssl_expiry
+from datetime import datetime
 from flask import Flask, render_template, request, redirect, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
@@ -216,6 +220,16 @@ def monitor(id):
 
     result = check_website(website.url)
 
+    hostname = website.url.replace("https://", "").replace("http://", "").split("/")[0]
+
+    ssl_expiry = get_ssl_expiry(hostname)
+
+    website.ssl_expiry = ssl_expiry
+
+    days_left = (ssl_expiry - datetime.now()).days
+
+    website.ssl_warning = days_left <= 30
+
     # Save monitoring log
     log = MonitoringLog(
 
@@ -260,9 +274,26 @@ def monitoring_history():
         logs=logs
     )
 
+@app.route("/test-ssl")
+def test_ssl():
+
+    expiry = get_ssl_expiry("google.com")
+
+    return str(expiry)
+
 if __name__ == "__main__":
+
     with app.app_context():
         db.create_all()
+
+        scheduler.add_job(
+            func=lambda: app.app_context().push() or monitor_all_websites(),
+            trigger="interval",
+            minutes=1,
+            id="website_monitor"
+        )
+
+        scheduler.start()
 
     app.run(debug=True)
 
