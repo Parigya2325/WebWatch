@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>{{ website.website_name }}</h2>
+
+<hr>
+
+<div class="row">
+
+<div class="col-md-3">
+<div class="card p-3">
+<h5>Status</h5>
+
+{% if website.status %}
+<span class="badge bg-success">Online</span>
+{% else %}
+<span class="badge bg-danger">Offline</span>
+{% endif %}
+
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card p-3">
+<h5>Uptime</h5>
+<h3>{{ uptime }}%</h3>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card p-3">
+<h5>Average Response</h5>
+<h3>{{ average_response }} ms</h3>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card p-3">
+<h5>Total Checks</h5>
+<h3>{{ total_logs }}</h3>
+</div>
+</div>
+
+</div>
+
+<br>
+
+<div class="card">
+
+<div class="card-body">
+
+<h4>Website Information</h4>
+
+<table class="table">
+
+<tr>
+<th>URL</th>
+<td>{{ website.url }}</td>
+</tr>
+
+<tr>
+<th>Monitoring Interval</th>
+<td>{{ website.monitoring_interval }} minute(s)</td>
+</tr>
+
+<tr>
+<th>SSL Expiry</th>
+
+<td>
+
+{% if website.ssl_expiry %}
+{{ website.ssl_expiry.strftime("%d %B %Y") }}
+{% else %}
+Not Checked
+{% endif %}
+
+</td>
+
+</tr>
+
+<tr>
+
+<th>Days Remaining</th>
+
+<td>
+
+{% if days_left != None %}
+
+{{ days_left }} Days
+
+{% else %}
+
+N/A
+
+{% endif %}
+
+</td>
+
+</tr>
+
+<tr>
+
+<th>Last Alert</th>
+
+<td>
+    {% if website.last_alert_sent %}
+        {{ website.last_alert_sent|capitalize }}
+    {% else %}
+        No Alerts Sent
+    {% endif %}
+</td>
+
+</tr>
+
+</table>
+
+</div>
+
+</div>
+
+<br>
+
+<div class="card">
+
+<div class="card-body">
+
+<h4>Response Time Trend</h4>
+
+<canvas id="responseChart"></canvas>
+
+</div>
+
+</div>
+
+<br>
+
+<div class="card">
+
+<div class="card-body">
+
+<h4>Recent Monitoring Logs</h4>
+
+<table class="table table-striped">
+
+<thead>
+
+<tr>
+
+<th>Status</th>
+
+<th>Response</th>
+
+<th>Checked At</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for log in logs %}
+
+<tr>
+
+<td>
+
+{% if log.is_online %}
+<span class="badge bg-success">Online</span>
+{% else %}
+<span class="badge bg-danger">Offline</span>
+{% endif %}
+
+</td>
+
+<td>{{ log.response_time }} ms</td>
+
+<td>{{ log.checked_at.strftime("%d %b %Y %I:%M %p") }}</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+
+const ctx = document.getElementById("responseChart");
+
+if (ctx) {
+
+    new Chart(ctx, {
+
+        type: "line",
+
+        data: {
+
+            labels: {{ chart_labels | tojson }},
+
+            datasets: [{
+
+                label: "Response Time (ms)",
+
+                data: {{ chart_values | tojson }},
+
+                borderColor: "rgb(54, 162, 235)",
+
+                backgroundColor: "rgba(54, 162, 235, 0.2)",
+
+                fill: true,
+
+                tension: 0.3
+
+            }]
+
+        },
+
+        options: {
+
+            responsive: true,
+
+            plugins: {
+
+                legend: {
+
+                    display: true
+
+                }
+
+            },
+
+            scales: {
+
+                y: {
+
+                    beginAtZero: true
+
+                }
+
+            }
+
+        }
+
+    });
+
+}
+
+</script>
+
+{% endblock %}
