@@ -9,7 +9,13 @@ from monitoring.ssl_monitor import get_ssl_expiry
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
-from database.models import db, User, Website, MonitoringLog, Notification
+from database.models import (
+    db,
+    User,
+    Website,
+    MonitoringLog,
+    Notification
+)
 from flask_mail import Mail
 from monitoring.email_alert import init_mail, send_alert
 from flask import send_file
@@ -439,36 +445,47 @@ def monitor(id):
 
     website = Website.query.get_or_404(id)
 
-    # -------------------------------
-    # HTTP Monitoring
-    # -------------------------------
+    db.session.refresh(website)
+
+    # Ensure the logged-in user owns this website
+    if website.user_id != session["user_id"]:
+        flash("Unauthorized access.")
+        return redirect("/websites")
+
+    # ---------------------------------------
+    # Website Monitoring
+    # ---------------------------------------
     result = check_website(website.url)
 
+    print("=" * 70)
+    print("MONITOR ROUTE CALLED")
+    print("Website ID:", id)
+    print("=" * 70)
+
     previous_status = website.status
-    website.status = result["is_online"]
+    current_status = result["is_online"]
+
+    print(f"Transition: {previous_status} -> {current_status}")
+
+    website.status = current_status
 
     print("=" * 60)
     print("Website:", website.website_name)
-    print("Previous Status:", previous_status)
-    print("Current Status:", result["is_online"])
-    print("Last Alert:", website.last_alert_sent)
+    print("Previous:", previous_status)
+    print("Current :", current_status)
     print("=" * 60)
 
-    # -------------------------------
-    # WEBSITE DOWN ALERT
-    # -------------------------------
-    if (
-        previous_status
-        and not result["is_online"]
-        and website.last_alert_sent != "down"
-    ):
+    # ---------------------------------------
+    # WEBSITE DOWN
+    # ---------------------------------------
+    if previous_status and not current_status:
 
-        print(">>> Sending DOWN email")
+        if website.last_alert_sent != "down":
 
-        send_alert(
-            subject="🚨 Website Down!",
-            recipient="parigyasingh2710@gmail.com",
-            body=f"""
+            send_alert(
+                subject="🚨 Website Down!",
+                recipient="parigyasingh2710@gmail.com",
+                body=f"""
 Website: {website.website_name}
 
 URL: {website.url}
@@ -477,36 +494,37 @@ The website is currently OFFLINE.
 
 Status Code: {result['status_code']}
 """
-        )
+            )
 
-        notification = Notification(
-            user_id=website.user_id,
-            title="Website Down",
-            message=f"{website.website_name} is offline.",
-            type="danger"
-        )
-        db.session.add(notification)
+            notification = Notification(
+                user_id=website.user_id,
+                title="Website Down",
+                message=f"{website.website_name} is currently offline.",
+                type="danger"
+            )
+            db.session.add(notification)
+            
+            print("Notification object created:")
+            print(notification.user_id)
+            print(notification.title)
+            print(notification.message)
 
-        website.last_alert_sent = "down"
-        website.last_alert_time = datetime.utcnow()
+            website.last_alert_sent = "down"
+            website.last_alert_time = datetime.utcnow()
 
-    # -------------------------------
-    # WEBSITE RECOVERED ALERT
-    # -------------------------------
-    elif (
-        not previous_status
-        and result["is_online"]
-        and website.last_alert_sent != "recovered"
-    ):
+            print("DOWN notification created.")
 
-        print(">>> Sending RECOVERY email")
+    # ---------------------------------------
+    # WEBSITE RECOVERED
+    # ---------------------------------------
+    elif (not previous_status) and current_status:
 
-        send_alert(
-            subject="✅ Website Recovered",
-            recipient="parigyasingh2710@gmail.com",
-            body=f"""
-Good news!
+        if website.last_alert_sent != "recovered":
 
+            send_alert(
+                subject="✅ Website Recovered",
+                recipient="parigyasingh2710@gmail.com",
+                body=f"""
 Website: {website.website_name}
 
 URL: {website.url}
@@ -515,22 +533,29 @@ The website is ONLINE again.
 
 Status Code: {result['status_code']}
 """
-        )
+            )
 
-        notification = Notification(
-            user_id=website.user_id,
-            title="Website Recovered",
-            message=f"{website.website_name} is back online.",
-            type="success"
-        )
-        db.session.add(notification)
+            notification = Notification(
+                user_id=website.user_id,
+                title="Website Recovered",
+                message=f"{website.website_name} is back online.",
+                type="success"
+            )
+            
+            db.session.add(notification)
+            print("Notification object created:")
+            print(notification.user_id)
+            print(notification.title)
+            print(notification.message)
 
-        website.last_alert_sent = "recovered"
-        website.last_alert_time = datetime.utcnow()
+            website.last_alert_sent = "recovered"
+            website.last_alert_time = datetime.utcnow()
 
-    # -------------------------------
+            print("RECOVERY notification created.")
+
+    # ---------------------------------------
     # SSL Monitoring
-    # -------------------------------
+    # ---------------------------------------
     ssl_expiry = get_ssl_expiry(website.url)
 
     website.ssl_expiry = ssl_expiry
@@ -538,19 +563,17 @@ Status Code: {result['status_code']}
     if ssl_expiry:
 
         days_left = (ssl_expiry - datetime.utcnow()).days
+
         website.ssl_warning = days_left <= 30
 
-        if (
-            website.ssl_warning
-            and website.last_alert_sent != "ssl"
-        ):
+        if website.ssl_warning:
 
-            print(">>> Sending SSL email")
+            if website.last_alert_sent != "ssl":
 
-            send_alert(
-                subject="⚠️ SSL Certificate Expiring",
-                recipient="parigyasingh2710@gmail.com",
-                body=f"""
+                send_alert(
+                    subject="⚠️ SSL Certificate Expiring",
+                    recipient="parigyasingh2710@gmail.com",
+                    body=f"""
 Website: {website.website_name}
 
 URL: {website.url}
@@ -559,34 +582,56 @@ SSL certificate expires in {days_left} days.
 
 Expiry Date: {ssl_expiry}
 """
-            )
+                )
 
-            notification = Notification(
-                user_id=website.user_id,
-                title="SSL Certificate Expiring",
-                message=f"The SSL certificate for {website.website_name} expires in {days_left} days.",
-                type="warning"
-            )
-            db.session.add(notification)
+                notification = Notification(
+                    user_id=website.user_id,
+                    title="SSL Certificate Expiring",
+                    message=f"The SSL certificate for {website.website_name} expires in {days_left} days.",
+                    type="warning"
+                )
+                
+                db.session.add(notification)
+                
+                print("Notification object created:")
+                print(notification.user_id)
+                print(notification.title)
+                print(notification.message)
 
-            website.last_alert_sent = "ssl"
-            website.last_alert_time = datetime.utcnow()
+                website.last_alert_sent = "ssl"
+                website.last_alert_time = datetime.utcnow()
+
+                print("SSL notification created.")
 
     else:
         website.ssl_warning = False
 
-    # -------------------------------
+    # ---------------------------------------
     # Save Monitoring Log
-    # -------------------------------
+    # ---------------------------------------
     log = MonitoringLog(
         website_id=website.id,
         status_code=result["status_code"],
         response_time=result["response_time"],
-        is_online=result["is_online"]
+        is_online=current_status
     )
 
     db.session.add(log)
-    db.session.commit()
+
+    print("=" * 60)
+    print("About to commit changes...")
+    print("Last Alert:", website.last_alert_sent)
+    print("=" * 60)
+
+    # ---------------------------------------
+    # Commit Everything
+    # ---------------------------------------
+    try:
+        db.session.commit()
+        print("Database commit successful.")
+    except Exception as e:
+        db.session.rollback()
+        print("DATABASE ERROR:", e)
 
     flash("Website monitored successfully!")
 
@@ -734,6 +779,91 @@ def profile():
         "profile.html",
         user=user
     )
+
+@app.route("/notifications")
+def notifications():
+
+    if "user_id" not in session:
+        flash("Please login first.")
+        return redirect("/login")
+
+    notifications = (
+        Notification.query
+        .filter_by(user_id=session["user_id"])
+        .order_by(Notification.created_at.desc())
+        .all()
+    )
+
+    return render_template(
+        "notifications.html",
+        notifications=notifications
+    )
+
+@app.context_processor
+def inject_notifications():
+
+    if "user_id" not in session:
+        return dict(
+            notifications=[],
+            unread_notifications=0
+        )
+
+    notifications = (
+        Notification.query
+        .filter_by(user_id=session["user_id"])
+        .order_by(Notification.created_at.desc())
+        .limit(10)
+        .all()
+    )
+
+    unread_notifications = (
+        Notification.query
+        .filter_by(
+            user_id=session["user_id"],
+            is_read=False
+        )
+        .count()
+    )
+
+    return dict(
+        notifications=notifications,
+        unread_notifications=unread_notifications
+    )
+
+@app.route("/notifications/read-all")
+def read_all_notifications():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    Notification.query.filter_by(
+        user_id=session["user_id"],
+        is_read=False
+    ).update(
+        {"is_read": True}
+    )
+
+    db.session.commit()
+
+    flash("All notifications marked as read.")
+
+    return redirect(request.referrer or "/dashboard")
+
+@app.route("/notifications/clear")
+def clear_notifications():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    Notification.query.filter_by(
+        user_id=session["user_id"]
+    ).delete()
+
+    db.session.commit()
+
+    flash("All notifications cleared.")
+
+    return redirect(request.referrer or "/dashboard")
 
 if __name__ == "__main__":
 
