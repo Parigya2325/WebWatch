@@ -48,6 +48,10 @@
         Monitoring History
     </a>
 
+    <a href="/download-report" class="btn btn-danger">
+        📄 Download PDF Report
+    </a>
+
 </div>
 
 <hr class="my-4">
@@ -257,6 +261,12 @@
 
 </table>
 
+<hr class="my-5">
+
+<h3>Response Time Trend</h3>
+
+<canvas id="historyChart"></canvas>
+
 {% endblock %}
 
 {% block scripts %}
@@ -335,5 +345,49 @@ const responseChart = new Chart(
     }
 
 );
+
+const historyCtx = document.getElementById("historyChart");
+
+new Chart(historyCtx, {
+
+    type: "line",
+
+    data: {
+
+        labels: {{ history_labels | tojson }},
+
+        datasets: [{
+
+            label: "Response Time (ms)",
+
+            data: {{ history_times }},
+
+            borderWidth: 3,
+
+            fill: false,
+
+            tension: 0.3
+
+        }]
+
+    },
+
+    options: {
+
+        responsive: true,
+
+        plugins: {
+
+            legend: {
+
+                display: true
+
+            }
+
+        }
+
+    }
+
+});
 </script>
 {% endblock %}

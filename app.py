@@ -1,18 +1,40 @@
+import pandas as pd
 from monitoring.scheduler import scheduler
 from monitoring.auto_monitor import monitor_all_websites
 from monitoring.http_monitor import check_website
 from monitoring.ssl_monitor import get_ssl_expiry
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 from database.models import db, User, Website, MonitoringLog
+from flask_mail import Mail
+from monitoring.email_alert import init_mail, send_alert
+from flask import send_file
+from reports.pdf_report import generate_pdf
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    flash,
+    session,
+    send_file
+)
 
+# Create Flask app FIRST
 app = Flask(__name__)
 app.secret_key = "webwatch_secret_key"
 app.config.from_object(Config)
 
+# Initialize extensions
 db.init_app(app)
+
+mail = Mail(app)
+init_mail(app, mail)
 
 @app.route("/")
 def home():
@@ -137,6 +159,25 @@ def dashboard():
             "days_left": days_left
         })
 
+    response_history = (
+        MonitoringLog.query
+        .join(Website)
+        .filter(Website.user_id == session["user_id"])
+        .order_by(MonitoringLog.checked_at.asc())
+        .limit(20)
+        .all()
+    )
+
+    history_labels = [
+        log.checked_at.strftime("%H:%M")
+        for log in response_history
+    ]
+
+    history_times = [
+        round(log.response_time, 2)
+        for log in response_history
+    ]
+
     return render_template(
         "dashboard.html",
         username=session["username"],
@@ -148,7 +189,9 @@ def dashboard():
         website_names=website_names,
         avg_response_times=avg_response_times,
         uptime_data=uptime_data,
-        ssl_info=ssl_info
+        ssl_info=ssl_info,
+        history_labels=history_labels,
+        history_times=history_times
     )
 
 @app.route("/add-website", methods=["GET", "POST"])
@@ -282,7 +325,13 @@ def delete_website(id):
     if website.user_id != session["user_id"]:
         flash("Unauthorized access.")
         return redirect("/websites")
+    
+    # Delete monitoring logs first
+    MonitoringLog.query.filter_by(
+        website_id=website.id
+    ).delete()
 
+    # Now delete website
     db.session.delete(website)
     db.session.commit()
 
@@ -303,7 +352,63 @@ def monitor(id):
     # HTTP Monitoring
     result = check_website(website.url)
 
+    previous_status = website.status
+
     website.status = result["is_online"]
+
+    print("=" * 50)
+    print("Website:", website.website_name)
+    print("Previous Status:", previous_status)
+    print("Current Status:", result["is_online"])
+    print("Last Alert:", website.last_alert_sent)
+    print("=" * 50)
+
+    # Send Website Down Alert only once
+    if (
+        previous_status
+        and not result["is_online"]
+        and website.last_alert_sent != "down"
+    ):
+        print(">>> Sending DOWN email")
+        
+        send_alert(
+            subject="🚨 Website Down!",
+            recipient="parigyasingh2710@gmail.com",
+            body=f"""
+    Website: {website.website_name}
+
+    URL: {website.url}
+
+    The website is currently OFFLINE.
+
+    Status Code: {result['status_code']}
+    """
+        )
+
+        website.last_alert_sent = "down"
+        website.last_alert_time = datetime.utcnow()
+
+    # Send Recovery Alert only once
+    if (
+        not previous_status
+        and result["is_online"]
+        and website.last_alert_sent != "recovered"
+    ):
+        send_alert(
+            subject="✅ Website Recovered",
+            recipient="parigyasingh2710@gmail.com",
+            body=f"""
+    Good news!
+
+    Website:
+    {website.website_name}
+
+    is ONLINE again.
+
+    Status Code:
+    {result['status_code']}
+    """
+        )
 
     # SSL Monitoring
     ssl_expiry = get_ssl_expiry(website.url)
@@ -313,6 +418,24 @@ def monitor(id):
     if ssl_expiry:
         days_left = (ssl_expiry - datetime.utcnow()).days
         website.ssl_warning = days_left <= 30
+
+        # Send SSL alert
+        if (
+            website.ssl_warning
+            and website.last_alert_sent != "ssl"
+        ):
+            send_alert(
+                subject="⚠️ SSL Certificate Expiring",
+                recipient="parigyasingh2710@gmail.com",
+                body=f"""
+    Website: {website.website_name}
+    SSL certificate expires in {days_left} days.
+    Expiry Date: {ssl_expiry}
+    """
+            )
+
+            website.last_alert_sent = "ssl"
+            website.last_alert_time = datetime.utcnow()
     else:
         website.ssl_warning = False
 
@@ -351,12 +474,90 @@ def monitoring_history():
         logs=logs
     )
 
+@app.route("/download-report")
+def download_report():
+
+    if "user_id" not in session:
+        flash("Please login first.")
+        return redirect("/login")
+
+    websites = Website.query.filter_by(
+        user_id=session["user_id"]
+    ).all()
+
+    pdf = generate_pdf(
+        session["username"],
+        websites
+    )
+
+    return send_file(
+        pdf,
+        download_name="WebWatch_Report.pdf",
+        as_attachment=True,
+        mimetype="application/pdf"
+    )
+
 @app.route("/test-ssl")
 def test_ssl():
 
     expiry = get_ssl_expiry("google.com")
 
     return str(expiry)
+
+@app.route("/test-email")
+def test_email():
+
+    send_alert(
+        subject="✅ WebWatch Test Email",
+        recipient="parigyasingh2710@gmail.com",
+        body="""
+Congratulations!
+
+Your email notifications are working correctly.
+
+This message was sent from your WebWatch application.
+"""
+    )
+
+    return "Email sent successfully!"
+
+@app.route("/export-csv")
+def export_csv():
+
+    if "user_id" not in session:
+        flash("Please login first.")
+        return redirect("/login")
+
+    logs = (
+        MonitoringLog.query
+        .join(Website)
+        .filter(Website.user_id == session["user_id"])
+        .order_by(MonitoringLog.checked_at.desc())
+        .all()
+    )
+
+    data = []
+
+    for log in logs:
+        data.append({
+            "Website": log.website.website_name,
+            "URL": log.website.url,
+            "Status": "Online" if log.is_online else "Offline",
+            "Status Code": log.status_code,
+            "Response Time (ms)": round(log.response_time, 2),
+            "Checked At": log.checked_at
+        })
+
+    df = pd.DataFrame(data)
+
+    filename = "monitoring_logs.csv"
+
+    df.to_csv(filename, index=False)
+
+    return send_file(
+        filename,
+        as_attachment=True
+    )
 
 if __name__ == "__main__":
 
@@ -373,4 +574,3 @@ if __name__ == "__main__":
         scheduler.start()
 
     app.run(debug=True)
-
