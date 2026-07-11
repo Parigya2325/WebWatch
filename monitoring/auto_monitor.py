@@ -1,6 +1,7 @@
 from monitoring.http_monitor import check_website
 from monitoring.ssl_monitor import get_ssl_expiry
 from monitoring.email_alert import send_alert
+from database.models import Notification
 
 from database.models import db, Website, MonitoringLog
 
@@ -63,6 +64,15 @@ Regards,
 WebWatch
 """
             )
+            
+            db.session.add(
+                Notification(
+                    user_id=website.user_id,
+                    title="Website Down",
+                    message=f"{website.website_name} is currently offline.",
+                    type="danger"
+                )
+            )
 
             website.last_alert_sent = "down"
             website.last_alert_time = datetime.utcnow()
@@ -103,6 +113,15 @@ Time:
 Regards,
 WebWatch
 """
+            )
+
+            db.session.add(
+                Notification(
+                    user_id=website.user_id,
+                    title="Website Recovered",
+                    message=f"{website.website_name} is back online.",
+                    type="success"
+                )
             )
 
             website.last_alert_sent = "recovered"
@@ -154,6 +173,15 @@ Regards,
 WebWatch
 """
                 )
+
+                db.session.add(
+                Notification(
+                    user_id=website.user_id,
+                    title="SSL Certificate Expiring",
+                    message=f"The SSL certificate for {website.website_name} expires in {days_left} days.",
+                    type="warning"
+                )
+            )
 
                 website.last_alert_sent = "ssl"
                 website.last_alert_time = datetime.utcnow()

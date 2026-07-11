@@ -64,15 +64,118 @@
             </ul>
 
             <div class="d-flex align-items-center">
-
-                <span class="text-white me-3">
+                
+                <!-- Notification Bell -->
+                <div class="dropdown me-3">
+                    
+                    <button
+                        class="btn btn-outline-light position-relative"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        
+                        🔔
+                        
+                        {% if unread_notifications > 0 %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {{ unread_notifications }}
+                        </span>
+                        {% endif %}
+                    
+                    </button>
+                    
+                    <ul class="dropdown-menu dropdown-menu-end shadow" style="width:380px;">
+                        
+                        <!-- Header -->
+                         <li class="dropdown-header fw-bold fs-6">
+                            🔔 Notifications
+                        </li>
+                        
+                        <!-- Read All / Clear All -->
+                         <li>
+                            
+                            <div class="d-flex justify-content-between px-3 py-2">
+                                
+                                <a href="/notifications/read-all"
+                                    class="btn btn-success btn-sm">
+                                    ✓ Read All
+                                </a>
+                                
+                                <a href="/notifications/clear"
+                                    class="btn btn-danger btn-sm"
+                                    onclick="return confirm('Clear all notifications?')">
+                                    🗑 Clear All
+                                </a>
+                            
+                            </div>
+                        
+                        </li>
+                        
+                        <li><hr class="dropdown-divider"></li>
+                        
+                        <!-- Notifications -->
+                         
+                        {% if notifications %}
+                            {% for n in notifications %}
+                            
+                            <li>
+                                
+                                <div class="px-3 py-2 {% if not n.is_read %}bg-light{% endif %}">
+                                    
+                                    <strong>{{ n.title }}</strong>
+                                    
+                                    <br>
+                                    
+                                    <small>{{ n.message }}</small>
+                                    
+                                    <br>
+                                    
+                                    <small class="text-muted">
+                                        {{ n.created_at.strftime("%d %b %Y %H:%M") }}
+                                    </small>
+                                
+                                </div>
+                            
+                            </li>
+                            
+                            {% if not loop.last %}
+                            <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            
+                            {% endfor %}
+                            
+                        {% else %}
+                            <!-- Empty State -->
+                             
+                            <li>
+                                
+                                <div class="text-center py-4">
+                                    <h1>🔔</h1>
+                                    
+                                    <p class="text-muted mb-0">
+                                        You're all caught up!
+                                    </p>
+                                
+                                </div>
+                            
+                            </li>
+                            
+                        {% endif %}
+                    
+                    </ul>
+                
+                </div>
+                
+                <!-- Username -->
+                 <span class="text-white me-3">
                     👋 {{ session["username"] }}
                 </span>
-
-                <a href="/logout" class="btn btn-danger btn-sm">
+                
+                <!-- Logout -->
+                 <a href="/logout" class="btn btn-danger btn-sm">
                     Logout
                 </a>
-
+            
             </div>
 
             {% else %}

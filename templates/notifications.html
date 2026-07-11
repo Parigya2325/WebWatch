@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2 class="mb-4">
+    🔔 Notifications
+</h2>
+
+{% if notifications %}
+
+<div class="list-group">
+
+{% for n in notifications %}
+
+<div class="list-group-item">
+
+    <div class="d-flex justify-content-between">
+
+        <h5>{{ n.title }}</h5>
+
+        <small>
+            {{ n.created_at.strftime("%d %b %Y %H:%M") }}
+        </small>
+
+    </div>
+
+    <p class="mb-1">
+        {{ n.message }}
+    </p>
+
+    {% if not n.is_read %}
+
+        <span class="badge bg-danger">
+            New
+        </span>
+
+    {% else %}
+
+        <span class="badge bg-secondary">
+            Read
+        </span>
+
+    {% endif %}
+
+</div>
+
+{% endfor %}
+
+</div>
+
+{% else %}
+
+<div class="alert alert-info">
+
+No notifications yet.
+
+</div>
+
+{% endif %}
+
+{% endblock %}
