@@ -40,6 +40,10 @@ class Website(db.Model):
 
     ssl_warning = db.Column(db.Boolean, default=False)
 
+    last_alert_sent = db.Column(db.String(50), default="")
+
+    last_alert_time = db.Column(db.DateTime)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     user_id = db.Column(
