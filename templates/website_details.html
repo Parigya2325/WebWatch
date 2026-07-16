@@ -121,11 +121,85 @@ N/A
 
 <br>
 
+<!-- Security Headers Scan -->
+<div class="card shadow">
+
+    <div class="card-header bg-dark text-white">
+        🔒 Security Headers Scan
+    </div>
+
+    <div class="card-body">
+
+        <h5>
+            Security Score:
+            {{ security.score }}/{{ security.total }}
+            ({{ security.percentage }}%)
+        </h5>
+
+        <table class="table table-bordered">
+
+            <thead class="table-light">
+
+                <tr>
+                    <th>Security Header</th>
+                    <th>Status</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+            {% for header, exists in security.results.items() %}
+
+                <tr>
+
+                    <td>{{ header }}</td>
+
+                    <td>
+
+                        {% if exists.present %}
+
+                            <span class="badge bg-success">
+                                ✔ Present
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge bg-danger">
+                                ✘ Missing
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>{{ exists.description }}</td>
+
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<br>
+
 <div class="card">
 
 <div class="card-body">
 
 <h4>Response Time Trend</h4>
+
+<canvas id="responseChart"></canvas>
+
+</div>
+
+</div>
 
 <canvas id="responseChart"></canvas>
 
