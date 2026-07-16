@@ -33,6 +33,7 @@ from flask import (
     session,
     send_file
 )
+from monitoring.security_headers import analyze_security_headers
 
 # Create Flask app FIRST
 app = Flask(__name__)
@@ -261,7 +262,7 @@ def websites():
         "websites.html",
         websites=websites,
         search=search,
-        now=datetime.utcnow()  
+        now=datetime.utcnow()
     )
 
 @app.route("/website/<int:id>")
@@ -279,61 +280,104 @@ def website_details(id):
 
     logs = (
         MonitoringLog.query
-        .filter_by(website_id=website.id)
+        .filter_by(website_id=id)
         .order_by(MonitoringLog.checked_at.desc())
+        .limit(20)
         .all()
     )
 
-    total_logs = len(logs)
-
-    online_logs = sum(1 for log in logs if log.is_online)
-
-    if total_logs:
-        uptime = round((online_logs / total_logs) * 100, 2)
-    else:
-        uptime = 0
-
-    if total_logs:
-        average_response = round(
-            sum(log.response_time for log in logs) / total_logs,
-            2
-        )
-    else:
-        average_response = 0
-
-    if website.ssl_expiry:
-        days_left = (website.ssl_expiry - datetime.utcnow()).days
-    else:
-        days_left = None
-
-    # Last 20 logs for graph
-    recent_logs = list(reversed(logs[:20]))
+    logs.reverse()
 
     chart_labels = [
         log.checked_at.strftime("%d-%m %H:%M")
-        for log in recent_logs
+        for log in logs
     ]
 
     chart_values = [
-        round(log.response_time, 2)
-        for log in recent_logs
+        log.response_time
+        for log in logs
     ]
 
-    print("=" * 50)
-    print("Chart Labels:", chart_labels)
-    print("Chart Values:", chart_values)
-    print("=" * 50)
+    total_logs = len(logs)
+
+    online_logs = sum(
+        1 for log in logs if log.is_online
+    )
+
+    uptime = (
+        round((online_logs / total_logs) * 100, 2)
+        if total_logs else 0
+    )
+
+    average_response = (
+        round(
+            sum(log.response_time for log in logs) / total_logs,
+            2
+        )
+        if total_logs else 0
+    )
+
+    days_left = None
+
+    if website.ssl_expiry:
+        days_left = (
+            website.ssl_expiry - datetime.utcnow()
+        ).days
+
+    # -----------------------------
+    # NEW SECURITY HEADER ANALYSIS
+    # -----------------------------
+    security = analyze_security_headers(
+        website.url
+    )
 
     return render_template(
+
         "website_details.html",
+
         website=website,
+
         logs=logs,
-        total_logs=total_logs,
+
         uptime=uptime,
+
         average_response=average_response,
+
+        total_logs=total_logs,
+
         days_left=days_left,
+
         chart_labels=chart_labels,
-        chart_values=chart_values
+
+        chart_values=chart_values,
+
+        security=security
+
+    )
+
+@app.route("/security-scan/<int:id>")
+def security_scan(id):
+
+    if "user_id" not in session:
+        flash("Please login first.")
+        return redirect("/login")
+
+    website = Website.query.get_or_404(id)
+
+    if website.user_id != session["user_id"]:
+        flash("Unauthorized access.")
+        return redirect("/websites")
+
+    headers = scan_security_headers(website.url)
+
+    score = sum(headers.values())
+    percentage = int((score / len(headers)) * 100)
+
+    return render_template(
+        "security_scan.html",
+        website=website,
+        headers=headers,
+        percentage=percentage
     )
 
 @app.route("/logout")
@@ -870,13 +914,25 @@ if __name__ == "__main__":
     with app.app_context():
         db.create_all()
 
+    # Function executed by APScheduler
+    def scheduled_monitor():
+        with app.app_context():
+            monitor_all_websites()
+
+    # Start scheduler only once
+    if not scheduler.running:
         scheduler.add_job(
-            func=lambda: app.app_context().push() or monitor_all_websites(),
+            func=scheduled_monitor,
             trigger="interval",
             minutes=1,
-            id="website_monitor"
+            id="website_monitor",
+            replace_existing=True
         )
 
         scheduler.start()
+        print("=" * 60)
+        print("✅ WebWatch Scheduler Started")
+        print("Automatic monitoring every 1 minute")
+        print("=" * 60)
 
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)

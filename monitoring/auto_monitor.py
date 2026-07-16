@@ -2,9 +2,7 @@ from monitoring.http_monitor import check_website
 from monitoring.ssl_monitor import get_ssl_expiry
 from monitoring.email_alert import send_alert
 from database.models import Notification
-
 from database.models import db, Website, MonitoringLog
-
 from datetime import datetime
 
 
