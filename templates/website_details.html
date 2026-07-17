@@ -46,6 +46,56 @@
 
 <br>
 
+<!-- Website Health Score -->
+<div class="card shadow border-0">
+
+    <div class="card-body">
+
+        <h4>🛡 Website Health Score</h4>
+
+        <div class="progress" style="height:30px;">
+
+            <div
+                class="progress-bar
+                {% if health_score >= 80 %}
+                    bg-success
+                {% elif health_score >= 50 %}
+                    bg-warning
+                {% else %}
+                    bg-danger
+                {% endif %}"
+
+                role="progressbar"
+                style="width: {{ health_score }}%;">
+
+                {{ health_score }}/100
+
+            </div>
+
+        </div>
+
+        <div class="mt-3">
+
+            <h5>
+
+                Risk Level:
+
+                <span class="badge bg-{{ risk_color }}">
+
+                    {{ risk_level }}
+
+                </span>
+
+            </h5>
+
+        </div>
+
+    </div>
+
+</div>
+
+<br>
+
 <div class="card">
 
 <div class="card-body">
@@ -183,6 +233,100 @@ N/A
 
         </table>
 
+        <!-- Security Recommendations -->
+        <h5 class="mt-4">
+            🛠 Recommendations
+        </h5>
+
+        <ul>
+
+        {% for header, exists in security.results.items() %}
+
+            {% if not exists.present %}
+
+            <li>
+
+                Add
+                <strong>{{ header }}</strong>
+                to improve website security.
+
+            </li>
+
+            {% endif %}
+
+        {% endfor %}
+
+        </ul>
+
+        <!-- Overall Security Assessment -->
+        {% if security.percentage >= 80 %}
+
+        <div class="alert alert-success mt-3">
+
+            <strong>Excellent Security Configuration</strong>
+
+            <br>
+
+            Most important HTTP security headers are configured correctly.
+
+        </div>
+
+        {% elif security.percentage >= 50 %}
+
+        <div class="alert alert-warning mt-3">
+
+            <strong>Moderate Security Configuration</strong>
+
+            <br>
+
+            Some important security headers are missing.
+
+        </div>
+
+        {% else %}
+
+        <div class="alert alert-danger mt-3">
+
+            <strong>Poor Security Configuration</strong>
+
+            <br>
+
+            Several critical security headers are missing. The website may be vulnerable to common web attacks.
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+<br>
+
+<div class="card shadow">
+
+    <div class="card-header bg-primary text-white">
+
+        💡 Security Recommendations
+
+    </div>
+
+    <div class="card-body">
+
+        <ul class="list-group">
+
+            {% for rec in recommendations %}
+
+            <li class="list-group-item">
+
+                {{ rec }}
+
+            </li>
+
+            {% endfor %}
+
+        </ul>
+
     </div>
 
 </div>
@@ -191,19 +335,13 @@ N/A
 
 <div class="card">
 
-<div class="card-body">
+    <div class="card-body">
 
-<h4>Response Time Trend</h4>
+        <h4>Response Time Trend</h4>
 
-<canvas id="responseChart"></canvas>
+        <canvas id="responseChart"></canvas>
 
-</div>
-
-</div>
-
-<canvas id="responseChart"></canvas>
-
-</div>
+    </div>
 
 </div>
 

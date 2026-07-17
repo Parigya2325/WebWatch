@@ -192,6 +192,144 @@ def dashboard():
         for log in response_history
     ]
 
+    # ----------------------------------------
+    # Dashboard Analytics
+    # ----------------------------------------
+  
+    all_logs = (
+        MonitoringLog.query
+        .join(Website)
+        .filter(Website.user_id == session["user_id"])
+        .all()
+    )
+
+    total_checks = len(all_logs)
+
+    if total_checks > 0:
+        
+        average_response = round(
+            sum(log.response_time for log in all_logs) / total_checks,
+            2
+        )
+
+        fastest_response = min(
+            log.response_time for log in all_logs
+        )
+
+        slowest_response = max(
+            log.response_time for log in all_logs
+        )
+
+        last_scan = max(
+            log.checked_at for log in all_logs
+        )
+
+    else:
+        
+        average_response = 0
+        fastest_response = 0
+        slowest_response = 0
+        last_scan = None
+
+
+    # ----------------------------------------
+    # Overall Security Score
+    # ----------------------------------------
+
+    security_score = 100
+    
+    security_score -= offline * 15
+    
+    security_score -= ssl_alerts * 10
+    
+    if security_score < 0:
+        security_score = 0
+
+    critical_alerts = []
+    
+    for website in websites:
+        
+        if not website.status:
+            
+            critical_alerts.append(
+                f"🔴 {website.website_name} is Offline"
+            )
+
+        if website.ssl_warning:
+
+            critical_alerts.append(
+                f"⚠ SSL Certificate Expiring for {website.website_name}"
+            )
+
+    dashboard_status = []
+
+    for website in websites:
+
+        logs = (
+            MonitoringLog.query
+            .filter_by(website_id=website.id)
+            .order_by(MonitoringLog.checked_at.desc())
+            .first()
+        )
+
+        response = logs.response_time if logs else 0
+
+        health = 100
+
+        if not website.status:
+            health -= 40
+
+        if website.ssl_warning:
+            health -= 20
+
+        dashboard_status.append({
+
+            "name": website.website_name,
+
+            "status": website.status,
+
+            "response": response,
+
+            "ssl": website.ssl_warning,
+
+            "health": health
+
+        })
+
+    # ----------------------------------------
+    # Overall Website Availability
+    # ----------------------------------------
+
+    overall_logs = (
+        MonitoringLog.query
+        .join(Website)
+        .filter(Website.user_id == session["user_id"])
+        .count()
+    )
+
+    online_logs = (
+        MonitoringLog.query
+        .join(Website)
+        .filter(
+            Website.user_id == session["user_id"],
+            MonitoringLog.is_online == True
+        )
+        .count()
+    )
+
+    if overall_logs > 0:
+        availability = round((online_logs / overall_logs) * 100, 2)
+    else:
+        availability = 0
+
+    system_status = {
+        "monitoring": "Running",
+        "scheduler": "Active",
+        "database": "Connected",
+        "email": "Enabled",
+        "refresh": "Every 60 Seconds"
+}
+
     return render_template(
         "dashboard.html",
         username=session["username"],
@@ -205,7 +343,17 @@ def dashboard():
         uptime_data=uptime_data,
         ssl_info=ssl_info,
         history_labels=history_labels,
-        history_times=history_times
+        history_times=history_times,
+        average_response=average_response,
+        total_checks=total_checks,
+        fastest_response=fastest_response,
+        slowest_response=slowest_response,
+        last_scan=last_scan,
+        security_score=security_score,
+        critical_alerts=critical_alerts,
+        dashboard_status=dashboard_status,
+        availability=availability,
+        system_status=system_status
     )
 
 @app.route("/add-website", methods=["GET", "POST"])
@@ -331,28 +479,90 @@ def website_details(id):
         website.url
     )
 
+    # -----------------------------
+    # WEBSITE HEALTH SCORE
+    # -----------------------------
+    health_score = 0
+
+    # Website Online
+    if website.status:
+        health_score += 40
+
+    # SSL Valid
+    if website.ssl_expiry and days_left is not None and days_left > 0:
+        health_score += 30
+
+    # Security Headers
+    header_score = (
+        security["score"] / security["total"]
+    ) * 30
+
+    health_score += round(header_score)
+
+    health_score = min(100, health_score)
+
+    if health_score >= 80:
+        risk_level = "Low"
+        risk_color = "success"
+        
+    elif health_score >= 50:
+        risk_level = "Medium"
+        risk_color = "warning"
+        
+    else:
+        risk_level = "High"
+        risk_color = "danger"
+
+    recommendations = []
+
+    if website.status:
+        recommendations.append("✅ Website is online.")
+    else:
+        recommendations.append("❌ Website is currently offline.")
+
+    if average_response > 1000:
+        recommendations.append(
+            "⚠ High response time detected. Consider optimizing server performance."
+        )
+
+    if days_left is not None:
+        if days_left <= 30:
+            recommendations.append(
+                "⚠ SSL certificate is close to expiry."
+            )
+        else:
+            recommendations.append(
+                "✅ SSL certificate is valid."
+            )
+
+    for header, info in security["results"].items():
+
+        if not info["present"]:
+
+            recommendations.append(
+                f"⚠ Add '{header}' security header."
+            )
+
+    if security["percentage"] == 100:
+        recommendations.append(
+            "✅ Excellent security configuration."
+        )
+
     return render_template(
-
         "website_details.html",
-
         website=website,
-
         logs=logs,
-
         uptime=uptime,
-
         average_response=average_response,
-
         total_logs=total_logs,
-
         days_left=days_left,
-
         chart_labels=chart_labels,
-
         chart_values=chart_values,
-
-        security=security
-
+        security=security,
+        health_score=health_score,
+        risk_level=risk_level,
+        risk_color=risk_color,
+        recommendations=recommendations
     )
 
 @app.route("/security-scan/<int:id>")

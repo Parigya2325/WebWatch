@@ -6,37 +6,128 @@
 
 <hr>
 
-<div class="row">
+<div class="row g-4">
 
     <div class="col-md-3">
-        <div class="card p-3">
-            <h4>Total Websites</h4>
-            <h2>{{ total_websites }}</h2>
+        <div class="card shadow border-0 text-center">
+            <div class="card-body">
+                <h1>🌐</h1>
+                <h5>Total Websites</h5>
+                <h2 class="text-primary">{{ total_websites }}</h2>
+            </div>
         </div>
     </div>
 
     <div class="col-md-3">
-        <div class="card p-3">
-            <h4>Online</h4>
-            <h2>{{ online }}</h2>
+        <div class="card shadow border-0 text-center">
+            <div class="card-body">
+                <h1>🟢</h1>
+                <h5>Online</h5>
+                <h2 class="text-success">{{ online }}</h2>
+            </div>
         </div>
     </div>
 
     <div class="col-md-3">
-        <div class="card p-3">
-            <h4>Offline</h4>
-            <h2>{{ offline }}</h2>
+        <div class="card shadow border-0 text-center">
+            <div class="card-body">
+                <h1>🔴</h1>
+                <h5>Offline</h5>
+                <h2 class="text-danger">{{ offline }}</h2>
+            </div>
         </div>
     </div>
 
     <div class="col-md-3">
-        <div class="card p-3">
-            <h4>SSL Alerts</h4>
-            <h2>{{ ssl_alerts }}</h2>
+        <div class="card shadow border-0 text-center">
+            <div class="card-body">
+                <h1>🔒</h1>
+                <h5>SSL Alerts</h5>
+                <h2 class="text-warning">{{ ssl_alerts }}</h2>
+            </div>
         </div>
     </div>
 
 </div>
+
+<!-- STEP 2 STARTS HERE -->
+
+<br>
+
+<div class="card shadow border-0">
+
+    <div class="card-body">
+
+        <h4>🛡 Overall Security Score</h4>
+
+        <div class="progress" style="height:35px;">
+
+            <div
+                class="progress-bar
+                {% if security_score >= 80 %}
+                    bg-success
+                {% elif security_score >= 50 %}
+                    bg-warning
+                {% else %}
+                    bg-danger
+                {% endif %}"
+
+                role="progressbar"
+                style="width: {{ security_score }}%;">
+
+                {{ security_score }}/100
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<br>
+
+<div class="row">
+
+    <div class="col-md-3">
+        <div class="card shadow">
+            <div class="card-body text-center">
+                <h5>⚡ Avg Response</h5>
+                <h3>{{ average_response }} ms</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow">
+            <div class="card-body text-center">
+                <h5>🚀 Fastest</h5>
+                <h3>{{ fastest_response }} ms</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow">
+            <div class="card-body text-center">
+                <h5>🐢 Slowest</h5>
+                <h3>{{ slowest_response }} ms</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow">
+            <div class="card-body text-center">
+                <h5>📈 Total Checks</h5>
+                <h3>{{ total_checks }}</h3>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<br>
 
 <div class="mt-4">
 
@@ -54,9 +145,114 @@
 
 </div>
 
+{% if last_scan %}
+
+<div class="alert alert-info mt-4">
+
+    Last Monitoring Scan:
+
+    <strong>
+
+        {{ last_scan.strftime("%d %B %Y %I:%M %p") }}
+
+    </strong>
+
+</div>
+
+{% endif %}
+
+<div class="card shadow mt-4">
+
+    <div class="card-header bg-primary text-white">
+        ⚙ System Status
+    </div>
+
+    <div class="card-body">
+
+        <table class="table table-bordered mb-0">
+
+            <tr>
+                <th>Monitoring Service</th>
+                <td><span class="badge bg-success">{{ system_status.monitoring }}</span></td>
+            </tr>
+
+            <tr>
+                <th>Scheduler</th>
+                <td><span class="badge bg-success">{{ system_status.scheduler }}</span></td>
+            </tr>
+
+            <tr>
+                <th>Database</th>
+                <td><span class="badge bg-success">{{ system_status.database }}</span></td>
+            </tr>
+
+            <tr>
+                <th>Email Alerts</th>
+                <td><span class="badge bg-success">{{ system_status.email }}</span></td>
+            </tr>
+
+            <tr>
+                <th>Refresh Rate</th>
+                <td>{{ system_status.refresh }}</td>
+            </tr>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% if critical_alerts %}
+
+<div class="card border-danger shadow mt-3">
+
+    <div class="card-header bg-danger text-white">
+
+        🚨 Critical Alerts
+
+    </div>
+
+    <div class="card-body">
+
+        <ul class="mb-0">
+
+            {% for alert in critical_alerts %}
+
+                <li>{{ alert }}</li>
+
+            {% endfor %}
+
+        </ul>
+
+    </div>
+
+</div>
+
+{% else %}
+
+<div class="card border-success shadow mt-3">
+
+    <div class="card-header bg-success text-white">
+
+        ✅ Critical Alerts
+
+    </div>
+
+    <div class="card-body">
+
+        No critical alerts detected.
+
+    </div>
+
+</div>
+
+{% endif %}
+
 <hr class="my-4">
 
-<h3>Recent Monitoring Activity</h3>
+<h3 class="mb-4">
+    🕒 Recent Monitoring Activity
+</h3>
 
 <table class="table table-striped">
 
@@ -101,7 +297,9 @@
 
 <hr class="my-5">
 
-<h3>Website Statistics</h3>
+<h3 class="mb-4">
+    📊 Website Statistics
+</h3>
 
 <div class="row">
 
@@ -115,9 +313,38 @@
 
 </div>
 
+<br>
+
+<div class="card shadow">
+
+    <div class="card-body text-center">
+
+        <h4>🌍 Website Availability</h4>
+
+        <h1 class="text-success">
+            {{ availability }}%
+        </h1>
+
+        {% if availability >= 99 %}
+            <span class="badge bg-success">Excellent</span>
+
+        {% elif availability >= 95 %}
+            <span class="badge bg-warning text-dark">Good</span>
+
+        {% else %}
+            <span class="badge bg-danger">Needs Attention</span>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
 <hr class="my-5">
 
-<h3>Website Uptime</h3>
+<h3 class="mb-4">
+    🌍 Website Uptime
+</h3>
 
 <table class="table table-bordered">
 
@@ -173,7 +400,9 @@
 
 <hr class="my-5">
 
-<h3>SSL Certificate Status</h3>
+<h3 class="mb-4">
+    🔒 SSL Certificate Status
+</h3>
 
 <table class="table table-hover table-bordered">
 
@@ -263,7 +492,9 @@
 
 <hr class="my-5">
 
-<h3>Response Time Trend</h3>
+<h3 class="mb-4">
+    📈 Response Time Trend
+</h3>
 
 <canvas id="historyChart"></canvas>
 
@@ -389,5 +620,10 @@ new Chart(historyCtx, {
     }
 
 });
+setTimeout(function(){
+
+    location.reload();
+
+},60000);
 </script>
 {% endblock %}
