@@ -1119,17 +1119,17 @@ def clear_notifications():
 
     return redirect(request.referrer or "/dashboard")
 
+# Create database tables
+with app.app_context():
+    db.create_all()
+
+# Function executed by APScheduler
+def scheduled_monitor():
+    with app.app_context():
+        monitor_all_websites()
+
 if __name__ == "__main__":
 
-    with app.app_context():
-        db.create_all()
-
-    # Function executed by APScheduler
-    def scheduled_monitor():
-        with app.app_context():
-            monitor_all_websites()
-
-    # Start scheduler only once
     if not scheduler.running:
         scheduler.add_job(
             func=scheduled_monitor,
@@ -1140,9 +1140,10 @@ if __name__ == "__main__":
         )
 
         scheduler.start()
+
         print("=" * 60)
         print("✅ WebWatch Scheduler Started")
         print("Automatic monitoring every 1 minute")
         print("=" * 60)
 
-    app.run(debug=True, use_reloader=False)
+    app.run(debug=False, use_reloader=False)
