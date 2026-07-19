@@ -125,11 +125,11 @@ https://webwatch-9ky3.onrender.com
 
 ---
 
-# 🏗 Project Architecture
+## 🏗️ Project Architecture
 
-Architecture diagram
-
-> *(Architecture diagram will be added in `/docs/architecture.png`.)*
+<p align="center">
+  <img src="docs/architecture.png" alt="WebWatch Architecture" width="900">
+</p>
 
 ---
 
