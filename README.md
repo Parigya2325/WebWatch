@@ -125,12 +125,6 @@ https://webwatch-9ky3.onrender.com
 
 ---
 
-## PDF Report
-
-![Report](screenshots/report.png)
-
----
-
 # 🏗 Project Architecture
 
 Architecture diagram
