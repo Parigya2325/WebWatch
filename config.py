@@ -9,7 +9,7 @@ class Config:
 
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL",
-        "mysql+pymysql://root:merganki@localhost/webwatch"
+        "postgresql+psycopg://neondb_owner:npg_0GWOxSP7FDfi@ep-ancient-snow-azlwimk1-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
     )
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
