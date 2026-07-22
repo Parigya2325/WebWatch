@@ -142,7 +142,9 @@ Entities
 - Monitoring Logs
 - Notifications
 
-> *(ER Diagram will be added in `/docs/database_schema.png`.)*
+<p align="center">
+  <img src="docs/database_schema.png" width="900">
+</p>
 
 ---
 
